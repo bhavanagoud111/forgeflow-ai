@@ -203,8 +203,12 @@ async def test_feature_workflow_with_docker_sandbox(tmp_path):
             repo = Repository(provider="local", full_name="local/taskboard-api", local_path=str(SAMPLE_REPO))
             s.add(repo)
             await s.flush()
-            ex = Execution(workflow="feature", repository_id=repo.id, created_by="t",
-                           request="Add JWT authentication to this FastAPI application")
+            ex = Execution(
+                workflow="feature",
+                repository_id=repo.id,
+                created_by="t",
+                request="Add JWT authentication to this FastAPI application",
+            )
             s.add(ex)
             await s.flush()
             eid = ex.id
