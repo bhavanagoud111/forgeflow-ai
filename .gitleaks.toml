@@ -1,0 +1,8 @@
+# Secret scanning config. Test fixtures contain fake, deliberately token-shaped strings
+# used to exercise redaction and review rules.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fake credentials in test fixtures"
+paths = ['''backend/tests/.*''']
