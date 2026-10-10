@@ -12,10 +12,26 @@ Every stage is visible: live events, agent runs, tool calls, token usage, diffs,
 review findings are stored and streamed to the UI. ForgeFlow never reports success without running
 the checks that prove it.
 
+![ForgeFlow AI: a feature request goes from plan to parallel code generation, sandboxed tests, two debugging rounds, review, human approval and a prepared pull request](docs/media/forgeflow-demo.gif)
+
+<sub>42-second walkthrough recorded from the running app (demo provider, real sandboxed test runs).
+Full-quality video: [`docs/media/forgeflow-demo.mp4`](docs/media/forgeflow-demo.mp4).</sub>
+
+### At a glance
+
+| | |
+| --- | --- |
+| **Input** | A repository plus a request, a GitHub issue, a bug report or a pull request |
+| **Output** | A verified branch with a draft pull request, a review report, or a diagnosis, with every step recorded |
+| **Guardrails** | Sandboxed execution, allowlisted commands, bounded retries, and human approval before anything leaves the system |
+| **Try it** | `make setup && make api` + `make web`, no API keys needed ([demo mode](#demo-mode)) |
+
 ---
 
 ## Contents
 
+1. [Screenshots](#screenshots)
+1. [Adopting ForgeFlow in your organization](#adopting-forgeflow-in-your-organization)
 1. [Capabilities](#capabilities)
 2. [Architecture](#architecture)
 3. [Agents](#agents)
@@ -32,6 +48,63 @@ the checks that prove it.
 14. [Security](#security)
 15. [Known limitations](#known-limitations)
 16. [Roadmap](#roadmap)
+
+## Screenshots
+
+All screenshots are from the running application with data produced by real executions.
+
+| Dashboard | Agent Control Center |
+| --- | --- |
+| ![Dashboard](docs/media/01-dashboard.png) | ![Agents](docs/media/02-agents.png) |
+| **Live workflow graph** with per-node agent runs and tool calls | **Plan**: tasks, dependencies, parallel batches, acceptance criteria |
+| ![Workflow graph](docs/media/04-workflow-graph.png) | ![Plan](docs/media/05-plan.png) |
+| **Diff viewer** (side by side or unified) | **Tests and debugging**: real pytest output per attempt |
+| ![Diff](docs/media/07-diff-split.png) | ![Tests](docs/media/08-tests-debugging.png) |
+| **Approval Center**: files, verification, requested permissions | **Trace**: every agent run with duration, model, tokens, cost |
+| ![Approvals](docs/media/13-approvals.png) | ![Trace](docs/media/12-trace.png) |
+
+<details>
+<summary>More screenshots</summary>
+
+| | |
+| --- | --- |
+| Executions | ![Executions](docs/media/03-executions.png) |
+| Live console | ![Console](docs/media/06-console.png) |
+| Code review findings | ![Review](docs/media/09-review.png) |
+| Acceptance criteria verification | ![Verification](docs/media/10-verification.png) |
+| Pull request draft | ![Pull request](docs/media/11-pull-request.png) |
+| Bug investigation workflow | ![Bug investigation](docs/media/14-bug-investigation.png) |
+| Automated code review of a diff | ![Code review](docs/media/15-code-review.png) |
+| Repository workspace and memory | ![Repository](docs/media/16-repository.png) |
+| Settings | ![Settings](docs/media/17-settings.png) |
+
+</details>
+
+## Adopting ForgeFlow in your organization
+
+ForgeFlow is designed to sit next to tools a team already uses rather than replace them.
+
+| Your existing tool | How ForgeFlow plugs in |
+| --- | --- |
+| **GitHub** | Install a GitHub App (or fine-grained token) on selected repositories. ForgeFlow reads issues, PRs and CI status, and opens **draft** PRs on `forgeflow/*` branches only after approval, so your normal review and branch protection still apply. |
+| **Slack** | `/forgeflow plan issue-42`, `/forgeflow review pull-request-17`, `/forgeflow status ...` from the channels where work is discussed, with Slack users mapped to ForgeFlow roles. |
+| **IDEs and AI assistants** | The MCP server exposes repositories, executions and workflow start to any MCP-compatible client. |
+| **Your LLM vendor** | Anthropic, OpenAI or a self-hosted Ollama model through one setting. Teams with strict data rules can keep inference on their own hardware. |
+| **Your toolchain** | Verification commands are detected per repository (pytest, npm test/lint/typecheck, go test/vet). Build a sandbox image with your toolchain and point `FORGEFLOW_SANDBOX_IMAGE` at it. |
+| **Your infrastructure** | Docker Compose today; the API, worker and sandbox runner are separate stateless services backed by Postgres and Redis, so they map directly onto Kubernetes deployments. |
+| **Your observability stack** | OpenTelemetry export to Datadog, Honeycomb, Grafana Tempo or Jaeger; optional LangSmith for model calls. |
+
+Typical use cases:
+
+- **Backlog chores from issues**: small features, endpoint additions, config changes, turned into reviewed draft PRs.
+- **Bug triage**: reproduce a report with a failing regression test before anyone touches the fix.
+- **PR review assistant**: static security rules plus model review on every pull request, posted to Slack.
+- **Test coverage**: generate tests for under-tested modules, with only test files allowed to change.
+- **Onboarding**: architecture, conventions and test structure summaries stored as repository memory.
+
+Rollout suggestion: start with `repo_onboarding` and `code_review` (read-only), then enable
+`test_generation`, then feature and bug workflows on low-risk repositories, keeping the
+approval gate on throughout. See [Known limitations](#known-limitations) before production use.
 
 ## Capabilities
 
