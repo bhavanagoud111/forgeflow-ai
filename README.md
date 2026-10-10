@@ -1,5 +1,9 @@
 # ForgeFlow AI
 
+[![CI](https://github.com/bhavanagoud111/forgeflow-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/bhavanagoud111/forgeflow-ai/actions/workflows/ci.yml)
+![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
+![LangGraph](https://img.shields.io/badge/orchestration-LangGraph-teal)
+
 **From issue to pull request, powered by coordinated AI agents.**
 
 ForgeFlow AI is a multi-agent software delivery platform. Given a repository and a request such
