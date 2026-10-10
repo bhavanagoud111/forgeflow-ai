@@ -1,0 +1,9 @@
+[project]
+name = "taskboard-api"
+version = "0.1.0"
+description = "Small FastAPI task tracker used as a ForgeFlow sample repository."
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.110", "httpx>=0.27"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

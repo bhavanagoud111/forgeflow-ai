@@ -1,0 +1,60 @@
+# Example API requests (VS Code REST Client / JetBrains HTTP client format).
+@base = http://localhost:8000
+@token = change-me
+
+### Health (no auth)
+GET {{base}}/api/health
+
+### Connected repositories
+GET {{base}}/api/repositories
+Authorization: Bearer {{token}}
+
+### Connect a GitHub repository (needs FORGEFLOW_GITHUB_TOKEN)
+POST {{base}}/api/repositories/connect
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"provider": "github", "full_name": "owner/repository"}
+
+### Submit a feature request
+POST {{base}}/api/executions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"repository_id": "<repo id>", "workflow": "feature",
+ "request": "Add JWT authentication to this FastAPI application"}
+
+### Investigate a bug
+POST {{base}}/api/executions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"repository_id": "<repo id>", "workflow": "bug_investigation",
+ "request": "PATCH /tasks/{id} with completed=false does not reopen a completed task"}
+
+### Review a GitHub pull request
+POST {{base}}/api/executions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"repository_id": "<repo id>", "workflow": "code_review", "request": "Review PR 17", "params": {"pr_number": 17}}
+
+### Live events (Server-Sent Events; resume with Last-Event-ID)
+GET {{base}}/api/executions/<execution id>/events
+Authorization: Bearer {{token}}
+Accept: text/event-stream
+
+### Agent runs, tool calls, tokens and cost
+GET {{base}}/api/executions/<execution id>/trace
+Authorization: Bearer {{token}}
+
+### Pending approvals
+GET {{base}}/api/approvals?status=pending
+Authorization: Bearer {{token}}
+
+### Approve (resumes the workflow and opens the pull request)
+POST {{base}}/api/approvals/<approval id>/approve
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"comment": "Reviewed the diff and test results."}

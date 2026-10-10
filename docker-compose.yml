@@ -1,0 +1,105 @@
+# ForgeFlow AI local stack.
+#   cp .env.example .env   # set FORGEFLOW_ADMIN_TOKEN and FORGEFLOW_RUNNER_TOKEN at least
+#   docker compose up --build
+# Web UI: http://localhost:3000   API docs: http://localhost:8000/docs
+name: forgeflow
+
+x-backend-env: &backend-env
+  FORGEFLOW_ENVIRONMENT: ${FORGEFLOW_ENVIRONMENT:-development}
+  FORGEFLOW_DATABASE_URL: postgresql+asyncpg://forgeflow:forgeflow@postgres:5432/forgeflow
+  FORGEFLOW_CHECKPOINT_URL: postgresql://forgeflow:forgeflow@postgres:5432/forgeflow
+  FORGEFLOW_REDIS_URL: redis://redis:6379/0
+  FORGEFLOW_ADMIN_TOKEN: ${FORGEFLOW_ADMIN_TOKEN:?set FORGEFLOW_ADMIN_TOKEN in .env}
+  FORGEFLOW_LLM_PROVIDER: ${FORGEFLOW_LLM_PROVIDER:-demo}
+  FORGEFLOW_LLM_MODEL: ${FORGEFLOW_LLM_MODEL:-claude-opus-5-5}
+  FORGEFLOW_LLM_API_KEY: ${FORGEFLOW_LLM_API_KEY:-}
+  FORGEFLOW_GITHUB_TOKEN: ${FORGEFLOW_GITHUB_TOKEN:-}
+  FORGEFLOW_SLACK_SIGNING_SECRET: ${FORGEFLOW_SLACK_SIGNING_SECRET:-}
+  FORGEFLOW_SLACK_BOT_TOKEN: ${FORGEFLOW_SLACK_BOT_TOKEN:-}
+  FORGEFLOW_SANDBOX_MODE: runner
+  FORGEFLOW_SANDBOX_RUNNER_URL: http://sandbox-runner:8700
+  FORGEFLOW_SANDBOX_RUNNER_TOKEN: ${FORGEFLOW_RUNNER_TOKEN:?set FORGEFLOW_RUNNER_TOKEN in .env}
+  FORGEFLOW_WORKSPACE_ROOT: /data/workspaces
+  FORGEFLOW_LOCAL_REPO_ROOTS: '["/app/examples/sample-repos"]'
+  FORGEFLOW_CORS_ORIGINS: '["http://localhost:3000"]'
+  FORGEFLOW_OTEL_EXPORTER_OTLP_ENDPOINT: ${FORGEFLOW_OTEL_EXPORTER_OTLP_ENDPOINT:-}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: forgeflow
+      POSTGRES_PASSWORD: forgeflow
+      POSTGRES_DB: forgeflow
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forgeflow"]
+      interval: 5s
+      retries: 10
+    networks: [backend]
+
+  redis:
+    image: redis:7-alpine
+    networks: [backend]
+
+  api:
+    build: { context: ., dockerfile: infrastructure/docker/backend.Dockerfile }
+    environment:
+      <<: *backend-env
+      FORGEFLOW_EMBEDDED_WORKER: "false"
+    ports: ["${FORGEFLOW_API_PORT:-8000}:8000"]
+    volumes: [workspaces:/data/workspaces]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+    networks: [backend]
+
+  worker:
+    build: { context: ., dockerfile: infrastructure/docker/backend.Dockerfile }
+    command: ["forgeflow-worker"]
+    environment: *backend-env
+    healthcheck:
+      disable: true
+    volumes: [workspaces:/data/workspaces]
+    depends_on:
+      api: { condition: service_healthy }
+      sandbox-runner: { condition: service_started }
+    networks: [backend, sandbox]
+
+  # Executes allowlisted test/lint commands. No credentials, internal-only network,
+  # read-only root filesystem, no capabilities, CPU/memory/PID limits.
+  sandbox-runner:
+    build: { context: ., dockerfile: infrastructure/docker/sandbox.Dockerfile }
+    command: ["uvicorn", "forgeflow.sandbox_runner:app", "--host", "0.0.0.0", "--port", "8700"]
+    environment:
+      FORGEFLOW_WORKSPACE_ROOT: /data/workspaces
+      FORGEFLOW_SANDBOX_RUNNER_TOKEN: ${FORGEFLOW_RUNNER_TOKEN:?set FORGEFLOW_RUNNER_TOKEN in .env}
+      FORGEFLOW_SANDBOX_COMMAND_TIMEOUT_SECONDS: "300"
+    volumes: [workspaces:/data/workspaces]
+    read_only: true
+    tmpfs: ["/tmp:size=256m,noexec,nosuid"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 1.0
+    networks: [sandbox]
+
+  web:
+    build: { context: apps/web, dockerfile: Dockerfile }
+    environment:
+      FORGEFLOW_API_URL: http://api:8000
+      FORGEFLOW_API_TOKEN: ${FORGEFLOW_ADMIN_TOKEN}
+    ports: ["${FORGEFLOW_WEB_PORT:-3000}:3000"]
+    depends_on:
+      api: { condition: service_healthy }
+    networks: [backend]
+
+networks:
+  backend: {}
+  sandbox:
+    internal: true
+
+volumes:
+  pgdata: {}
+  workspaces: {}
