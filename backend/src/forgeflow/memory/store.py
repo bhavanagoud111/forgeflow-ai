@@ -12,6 +12,8 @@ from datetime import timedelta
 from typing import Any
 
 from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from forgeflow.db.models import HistoricalMemory, RepositoryMemory, utcnow
 from forgeflow.db.session import Database
@@ -27,20 +29,21 @@ class MemoryStore:
         self.db = db
 
     async def save_repository(self, repository_id: str, entries: dict[str, dict[str, Any]]) -> None:
+        unknown = set(entries) - set(REPO_KINDS)
+        if unknown:
+            raise ValueError(f"unknown repository memory kind {sorted(unknown)}")
+        # Atomic upsert: concurrent executions on the same repository may write at the same time.
+        insert = pg_insert if self.db.url.startswith("postgres") else sqlite_insert
         async with self.db.session() as s:
             for kind, content in entries.items():
-                if kind not in REPO_KINDS:
-                    raise ValueError(f"unknown repository memory kind {kind}")
-                row = await s.scalar(
-                    select(RepositoryMemory).where(
-                        RepositoryMemory.repository_id == repository_id, RepositoryMemory.kind == kind
-                    )
+                stmt = insert(RepositoryMemory).values(
+                    repository_id=repository_id, kind=kind, content=redact_obj(content), updated_at=utcnow()
                 )
-                if row is None:
-                    s.add(RepositoryMemory(repository_id=repository_id, kind=kind, content=redact_obj(content)))
-                else:
-                    row.content = redact_obj(content)
-                    row.updated_at = utcnow()
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=["repository_id", "kind"],
+                    set_={"content": stmt.excluded.content, "updated_at": stmt.excluded.updated_at},
+                )
+                await s.execute(stmt)
 
     async def repository(self, repository_id: str) -> dict[str, dict[str, Any]]:
         async with self.db.session() as s:

@@ -43,3 +43,13 @@ async def test_event_bus_sequences_and_redacts(container):
     assert "xoxb" not in events[0].message and events[0].data["password"] == "[REDACTED]"
     async with container.services.db.session() as s:
         assert len(list(await s.scalars(select(ExecutionEvent).where(ExecutionEvent.execution_id == eid)))) == 3
+
+
+async def test_concurrent_repository_memory_writes_do_not_conflict(container):
+    import asyncio
+
+    mem = container.services.memory
+    rid = await _repo(container)
+    await asyncio.gather(*[mem.save_repository(rid, {"conventions": {"items": [str(i)]}}) for i in range(8)])
+    stored = await mem.repository(rid)
+    assert list(stored) == ["conventions"] and len(stored["conventions"]["items"]) == 1
