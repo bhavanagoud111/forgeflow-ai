@@ -28,7 +28,7 @@ Full-quality video: [`docs/media/forgeflow-demo.mp4`](docs/media/forgeflow-demo.
 | **Input** | A repository plus a request, a GitHub issue, a bug report or a pull request |
 | **Output** | A verified branch with a draft pull request, a review report, or a diagnosis, with every step recorded |
 | **Guardrails** | Sandboxed execution, allowlisted commands, bounded retries, and human approval before anything leaves the system |
-| **Try it** | `make setup && make api` + `make web`, no API keys needed ([demo mode](#demo-mode)) |
+| **Try it** | `make up` (Docker), then open http://localhost:3000. No API keys needed ([demo mode](#demo-mode)) |
 
 ---
 
@@ -205,11 +205,28 @@ policies, cancellation, timeouts and `interrupt()`-based approval are described 
 
 ## Installation
 
-Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js 22+, Docker (optional for
-local dev; required for the container sandbox and Compose).
+### Quick start with Docker (recommended)
+
+Requirements: Docker with Compose.
 
 ```bash
-git clone <this repository> forgeflow-ai && cd forgeflow-ai
+git clone https://github.com/bhavanagoud111/forgeflow-ai.git && cd forgeflow-ai
+make up        # or: ./scripts/setup-env.sh && docker compose up -d --build
+```
+
+Open http://localhost:3000, click **New execution**, keep `local/taskboard-api` and the
+Feature workflow, enter *"Add JWT authentication to this FastAPI application"*, watch the graph
+run, then approve it in **Approvals**. API docs are at http://localhost:8000/docs; the admin
+token for API calls is in `.env` (`FORGEFLOW_ADMIN_TOKEN`). Stop with `make down`.
+
+This starts PostgreSQL, Redis, the API, a separate worker, the isolated sandbox runner and the
+web UI. Ports are bound to `127.0.0.1` only.
+
+### Without Docker
+
+Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js 22+.
+
+```bash
 make setup
 ```
 
@@ -284,8 +301,10 @@ Scripted scenarios on `local/taskboard-api`:
 ## Docker
 
 ```bash
-cp .env.example .env    # set FORGEFLOW_ADMIN_TOKEN and FORGEFLOW_RUNNER_TOKEN
-docker compose up --build
+make up                 # creates .env with random tokens, builds images, starts the stack
+make ps                 # service status
+make logs               # follow logs
+make down               # stop (data volumes are kept; `docker compose down -v` deletes them)
 ```
 
 | Service | Role |

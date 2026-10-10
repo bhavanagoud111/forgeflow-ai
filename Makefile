@@ -1,5 +1,5 @@
 # ForgeFlow AI developer commands.
-.PHONY: setup dev api web test test-docker lint typecheck format build sandbox-image up down migrate token
+.PHONY: setup dev api web test test-docker lint typecheck format build sandbox-image up logs ps down migrate token
 
 setup:            ## Install backend and web dependencies
 	cd backend && uv sync
@@ -41,8 +41,16 @@ migrate:          ## Apply database migrations (uses FORGEFLOW_DATABASE_URL)
 token:            ## Create an operator token: make token NAME=alice ROLE=operator
 	cd backend && uv run forgeflow create-token --name $(NAME) --role $(or $(ROLE),operator)
 
-up:               ## Full stack in Docker Compose
-	docker compose up --build
+up:               ## Full stack in Docker Compose (creates .env with random tokens on first run)
+	./scripts/setup-env.sh
+	docker compose up -d --build
+	@echo "UI: http://localhost:3000   API docs: http://localhost:8000/docs"
 
-down:
+logs:             ## Follow logs of all services
+	docker compose logs -f
+
+ps:               ## Service status
+	docker compose ps
+
+down:             ## Stop the stack (data volumes are kept)
 	docker compose down

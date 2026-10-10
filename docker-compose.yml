@@ -1,6 +1,7 @@
 # ForgeFlow AI local stack.
-#   cp .env.example .env   # set FORGEFLOW_ADMIN_TOKEN and FORGEFLOW_RUNNER_TOKEN at least
-#   docker compose up --build
+#   ./scripts/setup-env.sh          # creates .env with random tokens
+#   docker compose up -d --build
+# Ports are published on 127.0.0.1 only; put a TLS reverse proxy in front for remote access.
 # Web UI: http://localhost:3000   API docs: http://localhost:8000/docs
 name: forgeflow
 
@@ -47,7 +48,7 @@ services:
     environment:
       <<: *backend-env
       FORGEFLOW_EMBEDDED_WORKER: "false"
-    ports: ["${FORGEFLOW_API_PORT:-8000}:8000"]
+    ports: ["127.0.0.1:${FORGEFLOW_API_PORT:-8000}:8000"]
     volumes: [workspaces:/data/workspaces]
     depends_on:
       postgres: { condition: service_healthy }
@@ -90,7 +91,7 @@ services:
     environment:
       FORGEFLOW_API_URL: http://api:8000
       FORGEFLOW_API_TOKEN: ${FORGEFLOW_ADMIN_TOKEN}
-    ports: ["${FORGEFLOW_WEB_PORT:-3000}:3000"]
+    ports: ["127.0.0.1:${FORGEFLOW_WEB_PORT:-3000}:3000"]
     depends_on:
       api: { condition: service_healthy }
     networks: [backend]
