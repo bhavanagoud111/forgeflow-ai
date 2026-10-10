@@ -35,23 +35,25 @@ Full-quality video: [`docs/media/forgeflow-demo.mp4`](docs/media/forgeflow-demo.
 ## Contents
 
 1. [Screenshots](#screenshots)
-1. [Adopting ForgeFlow in your organization](#adopting-forgeflow-in-your-organization)
-1. [Capabilities](#capabilities)
-2. [Architecture](#architecture)
-3. [Agents](#agents)
-4. [LangGraph workflows](#langgraph-workflows)
-5. [Technology stack](#technology-stack)
-6. [Installation](#installation)
-7. [Configuration](#environment-variables)
-8. [Local development](#local-development)
-9. [Docker](#docker)
-10. [GitHub integration](#github-integration)
-11. [Slack integration](#slack-integration)
-12. [Example workflows](#example-workflows)
-13. [Testing](#testing)
-14. [Security](#security)
-15. [Known limitations](#known-limitations)
-16. [Roadmap](#roadmap)
+2. [Adopting ForgeFlow in your organization](#adopting-forgeflow-in-your-organization)
+3. [Capabilities](#capabilities)
+4. [Architecture](#architecture)
+5. [Agents](#agents)
+6. [LangGraph workflows](#langgraph-workflows)
+7. [Technology stack](#technology-stack)
+8. [Installation](#installation)
+9. [Configuration](#environment-variables)
+10. [Local development](#local-development)
+11. [Docker](#docker)
+12. [GitHub integration](#github-integration)
+13. [Slack integration](#slack-integration)
+14. [Example workflows](#example-workflows)
+15. [Testing](#testing)
+16. [Security](#security)
+17. [Known limitations](#known-limitations)
+18. [Roadmap](#roadmap)
+
+---
 
 ## Screenshots
 
